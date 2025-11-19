@@ -1,15 +1,13 @@
-
-namespace Common
+﻿namespace Common
 {
     public class ViewModelSend
     {
         public string Message { get; set; }
         public int Id { get; set; }
-        public ViewModelSend(string Message, int Id)
+        public ViewModelSend(string message, int id)
         {
-            this.Message = Message;
-            this.Id = Id;
+            Message = message;
+            Id = id;
         }
     }
-
 }
