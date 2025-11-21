@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -13,8 +12,29 @@ namespace Server
     public class Program
     {
         public static List<User> Users = new List<User>();
-        public static IPAddress IPAddress;
+        public static IPAddress IpAddress;
         public static int Port;
+
+        static void Main()
+        {
+            Users.Add(new User("vladislav", "Asdfg123", @"A:\Авиатехникум"));
+
+            Console.Write("Введите IP адрес сервера: ");
+            string sIpAdress = Console.ReadLine();
+
+            Console.Write("Введите порт: ");
+            string sPort = Console.ReadLine();
+
+            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAdress, out IpAddress))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+
+                Console.WriteLine("Данные успешно введены. Запускаю сервер");
+                StartServer();
+            }
+
+            Console.Read();
+        }
 
         public static bool AutorizationUser(string login, string password)
         {
@@ -50,7 +70,7 @@ namespace Server
 
         public static void StartServer()
         {
-            IPEndPoint endPoint = new IPEndPoint(IPAddress, Port);
+            IPEndPoint endPoint = new IPEndPoint(IpAddress, Port);
 
             Socket sListener = new Socket(
                 AddressFamily.InterNetwork,
