@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net.Sockets;
+using Common;
 
 namespace Client
 {
     internal class Program
     {
-        public static IPAddress IpAdress;
+        public static IPAddress IpAddress;
         public static int Port;
         public static int Id = -1;
 
@@ -27,7 +24,7 @@ namespace Client
                     if (DataMessage.Length != 3)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Использование: connect [login] [password] \nПримеер: connect User1 P@ssw0rd");
+                        Console.WriteLine("Использование: connect [login] [password] \nПример: connect User1 P@ssw0rd");
                         BCommand = true;
                     }
                     else
@@ -59,6 +56,36 @@ namespace Client
                 }
             }
             return BCommand;
+        }
+        public static void ConnectServer()
+        {
+            try
+            {
+                IPEndPoint endPoint = new IPEndPoint(IpAddress, Port);
+
+                Socket socket = new Socket(
+                    AddressFamily.InterNetwork,
+                    SocketType.Stream,
+                    ProtocolType.Tcp);
+                socket.Connect(endPoint);
+                if (socket.Connected)
+                {
+                    Console.ForegroundColor = ConsoleColor.White;
+                    string message = Console.ReadLine();
+                    if (CheckCommand(message))
+                    {
+                        ViewModelSend viewModeSend = new ViewModelSend(message, Id);
+                        if (CheckCommand(message))
+                        {
+                            ViewModelSend viewModelSend = new ViewModelSend(message, Id);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
         }
     }
 }
