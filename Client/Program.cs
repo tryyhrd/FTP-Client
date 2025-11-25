@@ -17,11 +17,8 @@ namespace Client
 
         static void Main(string[] args)
         {
-            Console.Write("Введите IP адрес сервера: ");
-            string sIpAdress = Console.ReadLine();
-
-            Console.Write("Введите порт: ");
-            string sPort = Console.ReadLine();
+            string sIpAdress = "127.0.0.1";
+            string sPort = "5000";
 
             if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAdress, out IpAddress))
             {
