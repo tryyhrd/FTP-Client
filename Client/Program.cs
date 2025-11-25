@@ -15,30 +15,47 @@ namespace Client
         public static int Port;
         public static int Id = -1;
 
+        static void Main(string[] args)
+        {
+            Console.Write("Введите IP адрес сервера: ");
+            string sIpAdress = Console.ReadLine();
+
+            Console.Write("Введите порт: ");
+            string sPort = Console.ReadLine();
+
+            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAdress, out IpAddress))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+
+                Console.WriteLine("Данные успешно введены. Запускаю сервер");
+                while (true)
+                {
+                    ConnectServer();
+                }
+            }
+        }
+
         public static bool CheckCommand(string message)
         {
             bool BCommand = false;
-            string[] DataMessage = message.Split(new string[1] { " " }, StringSplitOptions.None);
+            string[] DataCommand = message.Split(' ');
 
-            if (DataMessage.Length > 0)
+            if (DataCommand.Length > 0)
             {
-                string Command = DataMessage[0];
-                if (Command == "connect")
+                if (DataCommand[0] == "connect")
                 {
-                    if (DataMessage.Length != 3)
+                    if (DataCommand.Length == 3) BCommand = true;
+                    else
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Использование: connect [login] [password] \nПример: connect User1 P@ssw0rd");
-                        BCommand = true;
                     }
-                    else
-                        BCommand = true;
                 }
-                else if (Command == "cd")
+                else if (DataCommand[0] == "cd")
                     BCommand = true;
-                else if (Command == "get")
+                else if (DataCommand[0] == "get")
                 {
-                    if (DataMessage.Length == 1)
+                    if (DataCommand.Length == 1)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Использование: get [NameFile]\nПример: get Test.txt");
@@ -47,9 +64,9 @@ namespace Client
                     else
                         BCommand = true;
                 }
-                else if (Command == "set")
+                else if (DataCommand[0] == "set")
                 {
-                    if (DataMessage.Length == 1)
+                    if (DataCommand.Length == 1)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Использование: set [NameFile]\nПример: set Test.txt");
@@ -145,5 +162,6 @@ namespace Client
                 Console.WriteLine("Что-то случилось: " + exp.Message);
             }
         }
+
     }
 }
