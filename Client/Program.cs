@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using Common;
+using Newtonsoft.Json;
 
 namespace Client
 {
@@ -74,17 +78,71 @@ namespace Client
                     string message = Console.ReadLine();
                     if (CheckCommand(message))
                     {
-                        ViewModelSend viewModeSend = new ViewModelSend(message, Id);
-                        if (CheckCommand(message))
+                        ViewModelSend viewModelSend = new ViewModelSend(message, Id);
+                        if (message.Split(new string[1] { " " }, StringSplitOptions.None)[0] == "set")
                         {
-                            ViewModelSend viewModelSend = new ViewModelSend(message, Id);
+                            string[] DataMessage = message.Split(new string[1] { " " }, StringSplitOptions.None);
+
+                            string NameFile = "";
+                            for (int i = 1; i < DataMessage.Length; i++)
+                                if (NameFile == "")
+                                    NameFile += DataMessage[i];
+                                else
+                                    NameFile += DataMessage[i];
+                            if (File.Exists(NameFile))
+                            {
+                                FileInfo FileInfo = new FileInfo(NameFile);
+                                FileInfoFTP NewFileInfo = new FileInfoFTP(File.ReadAllBytes(NameFile), FileInfo.Name);
+                                viewModelSend = new ViewModelSend(JsonConvert.SerializeObject(NewFileInfo), Id);
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Указанный файл не существует");
+                            }
+                        }
+                        byte[] messageByte = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelSend));
+                        int BytesSend = socket.Send(messageByte);
+                        byte[] bytes = new byte[10485760];
+                        int BytesRes = socket.Receive(bytes);
+                        string messageServer = Encoding.UTF8.GetString(bytes, 0, BytesRes);
+                        ViewModelMessage viewModelMessage = JsonConvert.DeserializeObject<ViewModelMessage>(messageServer);
+                        if (viewModelMessage.Command == "autorization")
+                            Id = int.Parse(viewModelMessage.Data);
+                        else if (viewModelMessage.Command == "message")
+                            Console.WriteLine(viewModelMessage.Data);
+                        else if (viewModelMessage.Command == "cd")
+                        {
+                            List<string> FoldresFiles = new List<string>();
+                            FoldresFiles = JsonConvert.DeserializeObject<List<string>>(viewModelMessage.Data);
+                            foreach (string Name in FoldresFiles)
+                                Console.WriteLine(Name);
+                        }
+                        else if (viewModelMessage.Command == "file")
+                        {
+                            string[] DataMessage = viewModelSend.Message.Split(new string[1] {" "}, StringSplitOptions.None);
+                            string getFile = "";
+                            for (int i = 1; i < DataMessage.Length; i++)
+                                if (getFile == "")
+                                    getFile = DataMessage[i];
+                                else
+                                    getFile += " " + DataMessage[i];
+                            byte[] byteFile = JsonConvert.DeserializeObject<byte[]>(viewModelMessage.Data);
+                            File.WriteAllBytes(getFile, byteFile);
                         }
                     }
                 }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Подключение не удалось.");
+                }
+                socket.Close();
             }
-            catch
+            catch (Exception exp)
             {
-
+                Console.ForegroundColor= ConsoleColor.Red;
+                Console.WriteLine("Что-то случилось: " + exp.Message);
             }
         }
     }
