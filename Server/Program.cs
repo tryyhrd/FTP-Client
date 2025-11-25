@@ -38,8 +38,7 @@ namespace Server
 
         public static bool AutorizationUser(string login, string password)
         {
-            User user = null;
-            user = Users.Find(x => x.login == login && x.password == password);
+            User user = Users.Find(x => x.login == login && x.password == password);
             return user != null;
         }
 
@@ -87,30 +86,27 @@ namespace Server
                 try
                 {
                     Socket Handler = sListener.Accept();
-                    string Data = null;
+                    
                     byte[] Bytes = new byte[10485760];
                     int BytesRec = Handler.Receive(Bytes);
-
-                    Data += Encoding.UTF8.GetString(Bytes, 0, BytesRec);
+                    string Data = Encoding.UTF8.GetString(Bytes,0,BytesRec);
 
                     Console.Write("Сообщение от пользователя: " + Data + "\n");
 
                     string Reply = "";
 
+                    ViewModelMessage viewModelMessage;
                     ViewModelSend viewModelSend = JsonConvert.DeserializeObject<ViewModelSend>(Data);
 
-                    if (viewModelSend != null )
-                    {
-                        ViewModelMessage viewModelMessage;
-                        string[] DataCommand = viewModelSend.Message.Split(new string[1] {" "}, StringSplitOptions.None);
+                    if (viewModelSend == null ) continue;
+                    
+                        string[] DataCommand = viewModelSend.Message.Split(' ');
 
                         if (DataCommand[0] == "connect")
                         {
-                            string[] DataMessage = viewModelSend.Message.Split(new string[1] {" "}, StringSplitOptions.None);
-
-                            if (AutorizationUser(DataMessage[1], DataMessage[2]))
+                            if (AutorizationUser(DataCommand[1], DataCommand[2]))
                             {
-                                int IdUser = Users.FindIndex(x => x.login == DataMessage[1] && x.password == DataMessage[2]);
+                                int IdUser = Users.FindIndex(x => x.login == DataCommand[1] && x.password == DataCommand[2]);
                                 viewModelMessage = new ViewModelMessage("autorization", IdUser.ToString());
                             }
                             else
@@ -203,9 +199,6 @@ namespace Server
                             byte[] message = Encoding.UTF8.GetBytes(Reply);
                             Handler.Send(message);
                         }
-                        
-                    }
-                     
                 }
                 catch (Exception ex) 
                 {
