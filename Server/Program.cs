@@ -23,9 +23,9 @@ namespace Server
 
             var users = context.Users;
 
-            User user = new User("vladislav", "Asdfg123", @"C:\Users\student-a502.PERMAVIAT\source\repos\FTP-Client\Client\bin\Debug\");
+            User user = new User("vlad", "123", Directory.GetCurrentDirectory());
 
-            if (!users.ToList().Contains(user))
+            if (!users.Any(x => x.login == user.login && x.password == user.password))
             {
                 users.Add(user);
                 context.SaveChanges();
@@ -85,14 +85,12 @@ namespace Server
                 AddressFamily.InterNetwork,
                 SocketType.Stream,
                 ProtocolType.Tcp);
-            
+
             sListener.Bind(endPoint);
             sListener.Listen(10);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Сервер запущен");
-
-            var Users = context.Users.ToList();
 
             while (true)
             {
@@ -119,12 +117,15 @@ namespace Server
                     {
                         if (AutorizationUser(DataCommand[1], DataCommand[2]))
                         {
-                            int IdUser = Users.FindIndex(x => x.login == DataCommand[1] && x.password == DataCommand[2]);
-                            viewModelMessage = new ViewModelMessage("autorization", IdUser.ToString());
+                            User authUser = context.Users.FirstOrDefault(x => x.login == DataCommand[1] && x.password == DataCommand[2]);
+                            viewModelMessage = new ViewModelMessage("autorization", authUser?.Id.ToString() ?? "-1");
+
+                            var action = new UserAction(authUser, viewModelSend.Message, viewModelMessage.Command);
+                            context.Actions.Add(action);
                         }
                         else
                         {
-                            viewModelMessage = new ViewModelMessage("nessage", "Не правильный логин и пароль пользователя");
+                            viewModelMessage = new ViewModelMessage("message", "Неверный логин или пароль");
                         }
 
                         Reply = JsonConvert.SerializeObject(viewModelMessage);
@@ -142,8 +143,9 @@ namespace Server
 
                             if (DataMessage.Length == 1)
                             {
-                                Users[viewModelSend.Id].temp_src = Users[viewModelSend.Id].src;
-                                FoldersFiles = GetDirectory(Users[viewModelSend.Id].src);
+                                User currentUser = context.Users.FirstOrDefault(u => u.Id == viewModelSend.Id);
+                                currentUser.temp_src = currentUser.src;
+                                FoldersFiles = GetDirectory(currentUser.src);
                             }
                             else
                             {
@@ -155,18 +157,30 @@ namespace Server
                                         cdFolder += DataMessage[i];
                                     else
                                         cdFolder += " " + DataMessage[i];
-                                    Users[viewModelSend.Id].temp_src = Users[viewModelSend.Id].temp_src + cdFolder;
-                                    FoldersFiles = GetDirectory(Users[viewModelSend.Id].temp_src);
+
+                                    User currentUser = context.Users.FirstOrDefault(u => u.Id == viewModelSend.Id);
+                                    currentUser.temp_src = currentUser.temp_src + cdFolder;
+                                    FoldersFiles = GetDirectory(currentUser.temp_src);
                                 }
                             }
 
                             if (FoldersFiles.Count == 0)
                                 viewModelMessage = new ViewModelMessage("message", "Директория пуста или не существует");
                             else
+                            {
                                 viewModelMessage = new ViewModelMessage("cd", JsonConvert.SerializeObject(FoldersFiles));
+
+                                var action = new UserAction(
+                                    context.Users.FirstOrDefault(u => u.Id == viewModelSend.Id),
+                                    viewModelSend.Message,
+                                    viewModelMessage.Command);
+                                context.Actions.Add(action);
+                            }
                         }
                         else
+                        {
                             viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
+                        }
 
                         Reply = JsonConvert.SerializeObject(viewModelMessage);
                         byte[] message = Encoding.UTF8.GetBytes(Reply);
@@ -174,7 +188,7 @@ namespace Server
                     }
                     else if (DataCommand[0] == "get")
                     {
-                        if (viewModelSend.Id == -1) 
+                        if (viewModelSend.Id == -1)
                             viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
 
                         else
@@ -189,8 +203,8 @@ namespace Server
                                     getFile += " " + DataCommand[i];
                             }
 
-                            byte[] byteFile = File.ReadAllBytes(Users[viewModelSend.Id].temp_src + getFile);
-                            viewModelMessage = new ViewModelMessage("file", JsonConvert.SerializeObject(byteFile));
+                            byte[] byteFile = File.ReadAllBytes(context.Users.FirstOrDefault(u => u.Id == viewModelSend.Id).temp_src + @"\" + getFile);
+                            viewModelMessage = new ViewModelMessage("file", Convert.ToBase64String(byteFile));
                         }
 
                         byte[] Response = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelMessage));
@@ -201,7 +215,7 @@ namespace Server
                         if (viewModelSend.Id != -1)
                         {
                             FileInfoFTP SendFileInfo = JsonConvert.DeserializeObject<FileInfoFTP>(viewModelSend.Message);
-                            File.WriteAllBytes(Users[viewModelSend.Id].temp_src + @"\" + SendFileInfo.Name, SendFileInfo.Data);
+                            File.WriteAllBytes(context.Users.FirstOrDefault(u => u.Id == viewModelSend.Id).temp_src + @"\" + SendFileInfo.Name, SendFileInfo.Data);
                             viewModelMessage = new ViewModelMessage("message", "Файл загружен");
                         }
                         else
@@ -211,8 +225,10 @@ namespace Server
                         byte[] message = Encoding.UTF8.GetBytes(Reply);
                         Handler.Send(message);
                     }
+
+                    context.SaveChanges();
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Что-то случилось: " + ex.Message);

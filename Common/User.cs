@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace Common
 {
@@ -10,6 +11,7 @@ namespace Common
         public string password { get; set; }
         public string src { get; set; }
         public string temp_src { get; set; }
+        public ICollection<UserAction> Actions { get; set; }
         public User() { }
         public User(string login, string password, string src)
         {
