@@ -86,16 +86,14 @@
             </StackPanel>
         </Border>
 
-        <!-- Текущий путь -->
         <Border Grid.Row="2" Background="White" Padding="10,5" BorderThickness="0,0,0,1" BorderBrush="LightGray">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Текущий путь:" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
-                <TextBox x:Name="txtCurrentPath" IsReadOnly="True" VerticalAlignment="Center" 
+                <TextBox x:Name="tbCurrentPath" IsReadOnly="True" VerticalAlignment="Center" 
                          Text="Не подключено" Width="600" Padding="5,2" Background="WhiteSmoke"/>
             </StackPanel>
         </Border>
 
-        <!-- Список файлов и папок -->
         <Grid Grid.Row="3">
             <ListView x:Name="listViewFiles" Style="{StaticResource FileListStyle}" 
                       MouseDoubleClick="ListViewFiles_MouseDoubleClick"
@@ -120,7 +118,6 @@
                 </ListView.View>
             </ListView>
 
-            <!-- Сообщение при отсутствии подключения -->
             <Border x:Name="placeholder" Background="White" Visibility="Visible">
                 <TextBlock Text="Подключитесь к серверу и авторизуйтесь для просмотра файлов" 
                           HorizontalAlignment="Center" VerticalAlignment="Center"
