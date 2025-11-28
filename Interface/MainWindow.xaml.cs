@@ -4,12 +4,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Windows;
 using Common;
-using Client;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using Newtonsoft.Json;
+using System.Windows.Data;
 
 namespace Interface
 {
@@ -41,9 +41,7 @@ namespace Interface
         {
             public string Icon { get; set; }
             public string Name { get; set; }
-            public string Size { get; set; }
             public string Type { get; set; }
-            public string ModifiedDate { get; set; }
             public bool IsDirectory { get; set; }
         }
 
@@ -54,6 +52,8 @@ namespace Interface
                 if (ConnectToServer(IpAddress, Port))
                 {
                     placeholder.Visibility = Visibility.Collapsed;
+                    serverPanel.Visibility = Visibility.Collapsed;
+
                     tbStatus.Text = "Подключено";
 
                     isConnected = true;
@@ -187,11 +187,26 @@ namespace Interface
                 }
                 else if (viewModelMessage.Command == "cd")
                 {
-                    List<string> FoldresFiles = new List<string>();
-                    FoldresFiles = JsonConvert.DeserializeObject<List<string>>(viewModelMessage.Data);
+                    var FoldersFile = JsonConvert.DeserializeObject<List<string>>(viewModelMessage.Data);
 
-                    DisplayDirectoryContents(FoldresFiles);
+                    DisplayDirectoryContents(FoldersFile);
 
+                    if (thisUser != null)
+                    {
+                        using (var db = new DataBase())
+                        {
+                            var updatedUser = db.Users.FirstOrDefault(x => x.Id == thisUser.Id);
+                            if (updatedUser != null)
+                            {
+                                thisUser.temp_src = updatedUser.temp_src;
+
+                                Dispatcher.Invoke(() =>
+                                {
+                                    tbCurrentPath.Text = thisUser.temp_src ?? thisUser.src;
+                                });
+                            }
+                        }
+                    }
                 }
                 else if (viewModelMessage.Command == "file")
                 {
@@ -229,22 +244,16 @@ namespace Interface
 
                 if (item.EndsWith("/"))
                 {
-                    // Это папка
                     fileItem.Icon = "📁";
                     fileItem.Name = item.TrimEnd('/');
-                    fileItem.Size = "";
                     fileItem.Type = "Папка";
-                    fileItem.ModifiedDate = "";
                     fileItem.IsDirectory = true;
                 }
                 else
                 {
-                    // Это файл
                     fileItem.Icon = "📄";
                     fileItem.Name = item;
-                    fileItem.Size = "-";
                     fileItem.Type = "Файл";
-                    fileItem.ModifiedDate = "";
                     fileItem.IsDirectory = false;
                 }
 
@@ -255,6 +264,37 @@ namespace Interface
 
             placeholder.Visibility = Visibility.Collapsed;
             listViewFiles.Visibility = Visibility.Visible;
+        }
+
+        private void Up_Click(object sender, RoutedEventArgs e)
+        {
+            if (thisUser == null)
+                return;
+
+            using (var db = new DataBase())
+            {
+                thisUser = db.Users.FirstOrDefault(x => x.Id == thisUser.Id);
+            }
+            
+            SendCommand($"cd ..");
+
+            tbCurrentPath.Text = thisUser.temp_src;
+        }
+
+        private void SelectFile(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var file = listViewFiles.SelectedItem as FileSystemItem;
+
+            if (file.IsDirectory)
+            {
+                SendCommand($"cd {file.Name}");
+
+                using (var db = new DataBase())
+                {
+                    thisUser = db.Users.FirstOrDefault(x => x.Id == thisUser.Id);
+                    tbCurrentPath.Text = thisUser.temp_src ?? thisUser.src;
+                }
+            }
         }
 
         private void ListViewFiles_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)

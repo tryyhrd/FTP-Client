@@ -8,7 +8,7 @@ namespace Common
         public DbSet<UserAction> Actions { get; set; }
         public DbSet<User> Users { get; set; }
 
-        public DataBase(): base("Server=DESKTOP-E07VVT6\\SQLEXPRESS;Database=FTPServerDB;Trusted_Connection=true;")
+        public DataBase(): base("Server=10.0.201.112;Database=base1_ISP_22_4_12;User=ISP_22_4_12;Pwd=7m4tIyDMeybp_;Trusted_Connection=false;")
         {
             Database.SetInitializer(new MigrateDatabaseToLatestVersion<DataBase, Configuration>());
         }

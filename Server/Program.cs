@@ -98,16 +98,20 @@ namespace Server
                 string[] dirs = Directory.GetDirectories(src);
                 foreach (string dir in dirs)
                 {
-                    string NameDirectory = dir.Replace(src, "");
-                    FoldersFiles.Add(NameDirectory + "/");
+                    string NameDirectory = Path.GetFileName(dir);
+
+                    if (!string.IsNullOrEmpty(NameDirectory))
+                        FoldersFiles.Add(NameDirectory + "/");
                 }
 
                 string[] files = Directory.GetFiles(src);
 
                 foreach (string file in files)
                 {
-                    string NameFile = file.Replace(src, "");
-                    FoldersFiles.Add(NameFile);
+                    string NameFile = Path.GetFileName(file);
+
+                    if (!string.IsNullOrEmpty(NameFile))
+                        FoldersFiles.Add(NameFile);
                 }
             }
 
@@ -292,16 +296,31 @@ namespace Server
                 }
 
                 List<string> FoldersFiles;
+                string userRoot = Path.GetFullPath(currentUser.src).TrimEnd('\\', '/');
 
                 if (DataCommand.Length == 1)
                 {
-                    currentUser.temp_src = currentUser.src;
+                    currentUser.temp_src = userRoot;
                     FoldersFiles = GetDirectory(currentUser.src);
                 }
                 else
                 {
                     string cdFolder = string.Join(" ", DataCommand.Skip(1));
-                    string newPath = Path.Combine(currentUser.temp_src ?? currentUser.src, cdFolder);
+                    string basePath = currentUser.temp_src ?? userRoot;
+
+                    basePath = Path.GetFullPath(basePath).TrimEnd('\\', '/');
+
+                    string newPath;
+
+                    if (Path.IsPathRooted(cdFolder))
+                    {
+                        newPath = Path.GetFullPath(cdFolder).TrimEnd('\\', '/');
+                    }
+                    else
+                    {
+                        newPath = Path.Combine(basePath, cdFolder);
+                        newPath = Path.GetFullPath(newPath).TrimEnd('\\', '/');
+                    }
 
                     if (Directory.Exists(newPath))
                     {
@@ -317,6 +336,8 @@ namespace Server
 
                 db.SaveChanges();
 
+                string currentPath = currentUser.temp_src ?? userRoot;
+
                 if (FoldersFiles.Count == 0)
                 {
                     SendResponse(Handler, "message", "Директория пуста");
@@ -331,6 +352,7 @@ namespace Server
                         Action = viewModelSend.Message,
                         Command = "cd"
                     };
+
                     db.Actions.Add(action);
                     db.SaveChanges();
                 }

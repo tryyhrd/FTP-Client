@@ -7,20 +7,18 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Window.Resources>
-        <!-- Стили для кнопок -->
+        
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="2"/>
             <Setter Property="MinWidth" Value="80"/>
         </Style>
 
-        <!-- Стиль для списка файлов -->
         <Style x:Key="FileListStyle" TargetType="ListView">
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="LightGray"/>
         </Style>
 
-        <!-- Контекстное меню -->
         <ContextMenu x:Key="FileContextMenu">
             <MenuItem Header="Открыть" Click="MenuOpen_Click"/>
             <MenuItem Header="Скачать" Click="MenuDownload_Click"/>
@@ -41,15 +39,17 @@
 
         <Border Grid.Row="0" Background="LightBlue" Padding="10,5" BorderThickness="0,0,0,1" BorderBrush="Gray">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Сервер:" VerticalAlignment="Center" Margin="5,0"/>
-                <TextBox x:Name="tbServer" Text="127.0.0.1" Width="100" Margin="5,0" VerticalContentAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" Name="serverPanel">
+                    <TextBlock Text="Сервер:" VerticalAlignment="Center" Margin="5,0"/>
+                    <TextBox x:Name="tbServer" Text="127.0.0.1" Width="100" Margin="5,0" VerticalContentAlignment="Center"/>
 
-                <TextBlock Text="Порт:" VerticalAlignment="Center" Margin="10,0,5,0"/>
-                <TextBox x:Name="tbPort" Text="5000" Width="50" Margin="5,0" VerticalContentAlignment="Center"/>
+                    <TextBlock Text="Порт:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                    <TextBox x:Name="tbPort" Text="5000" Width="50" Margin="5,0" VerticalContentAlignment="Center"/>
 
-                <Button x:Name="btnConnect" Content="Подключить" Style="{StaticResource ActionButtonStyle}" 
-                        Click="Connect"/>
-
+                    <Button x:Name="btnConnect" Content="Подключить" Style="{StaticResource ActionButtonStyle}" 
+                            Click="Connect"/>
+                </StackPanel>
+                
                 <Separator Width="20" Visibility="Hidden"/>
 
                 <StackPanel Orientation="Horizontal" Name="autorizationPanel">
@@ -66,23 +66,16 @@
             </StackPanel>
         </Border>
 
-        <!-- Панель навигации -->
         <Border Grid.Row="1" Background="LightYellow" Padding="10,5" BorderThickness="0,0,0,1" BorderBrush="Gray">
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnUp" Content="📁 Наверх" Style="{StaticResource ActionButtonStyle}" 
-                        Click="BtnUp_Click" ToolTip="Перейти в родительскую папку"/>
-
-                <Button x:Name="btnRefresh" Content="🔄 Обновить" Style="{StaticResource ActionButtonStyle}" 
-                        Click="BtnRefresh_Click" ToolTip="Обновить список файлов"/>
+                        Click="Up_Click" ToolTip="Перейти в родительскую папку"/>
 
                 <Button x:Name="btnUpload" Content="⬆️ Загрузить" Style="{StaticResource ActionButtonStyle}" 
                         Click="BtnUpload_Click" ToolTip="Загрузить файл на сервер"/>
 
                 <Button x:Name="btnDownload" Content="⬇️ Скачать" Style="{StaticResource ActionButtonStyle}" 
                         Click="BtnDownload_Click" ToolTip="Скачать выбранный файл"/>
-
-                <Button x:Name="btnCreateFolder" Content="📁 Создать папку" Style="{StaticResource ActionButtonStyle}" 
-                        Click="BtnCreateFolder_Click" ToolTip="Создать новую папку" Margin="20,2,2,2"/>
             </StackPanel>
         </Border>
 
@@ -96,7 +89,7 @@
 
         <Grid Grid.Row="3">
             <ListView x:Name="listViewFiles" Style="{StaticResource FileListStyle}" 
-                      MouseDoubleClick="ListViewFiles_MouseDoubleClick"
+                      MouseDoubleClick="SelectFile"
                       KeyDown="ListViewFiles_KeyDown"
                       ContextMenu="{StaticResource FileContextMenu}">
                 <ListView.View>
@@ -111,9 +104,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Размер" Width="100" DisplayMemberBinding="{Binding Size}"/>
                         <GridViewColumn Header="Тип" Width="100" DisplayMemberBinding="{Binding Type}"/>
-                        <GridViewColumn Header="Дата изменения" Width="120" DisplayMemberBinding="{Binding ModifiedDate}"/>
                     </GridView>
                 </ListView.View>
             </ListView>
