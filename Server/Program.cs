@@ -389,13 +389,19 @@ namespace Server
                 {
                     if (File.Exists(filePath))
                     {
-                        byte[] byteFile = File.ReadAllBytes(filePath);
-                        SendResponse(Handler, "file", Convert.ToBase64String(byteFile));
+                        byte[] fileBytes = File.ReadAllBytes(filePath);
+                        string base64Data = Convert.ToBase64String(fileBytes);
+
+                        SendResponse(Handler, "file", JsonConvert.SerializeObject(new FileTransfer
+                        {
+                            FileName = Path.GetFileName(filePath),
+                            Data = base64Data
+                        }));
 
                         var action = new UserAction
                         {
                             User = currentUser,
-                            Action = viewModelSend.Message,
+                            Action = $"download {getFile}",
                             Command = "get"
                         };
                         db.Actions.Add(action);
@@ -423,8 +429,8 @@ namespace Server
 
             try
             {
-                FileInfoFTP SendFileInfo = JsonConvert.DeserializeObject<FileInfoFTP>(viewModelSend.Message);
-                if (SendFileInfo == null)
+                FileTransfer fileTransfer = JsonConvert.DeserializeObject<FileTransfer>(viewModelSend.Message);
+                if (fileTransfer == null || fileTransfer.Data == null)
                 {
                     SendResponse(Handler, "message", "Неверный формат файла");
                     return;
@@ -439,14 +445,29 @@ namespace Server
                         return;
                     }
 
-                    string filePath = Path.Combine(currentUser.temp_src ?? currentUser.src, SendFileInfo.Name);
-                    File.WriteAllBytes(filePath, SendFileInfo.Data);
-                    SendResponse(Handler, "message", "Файл загружен");
+                    string filePath = Path.Combine(currentUser.temp_src ?? currentUser.src, fileTransfer.FileName);
+
+                    if (Directory.Exists(filePath))
+                    {
+                        SendResponse(Handler, "message", "Невозможно загрузить файл - существует директория с таким именем");
+                        return;
+                    }
+
+                    string directory = Path.GetDirectoryName(filePath);
+                    if (!Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
+                    byte[] fileBytes = Convert.FromBase64String(fileTransfer.Data);
+                    File.WriteAllBytes(filePath, fileBytes);
+
+                    SendResponse(Handler, "message", $"Файл {fileTransfer.FileName} успешно загружен");
 
                     var action = new UserAction
                     {
                         User = currentUser,
-                        Action = viewModelSend.Message,
+                        Action = $"upload {fileTransfer.FileName}",
                         Command = "set"
                     };
                     db.Actions.Add(action);

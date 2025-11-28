@@ -122,33 +122,6 @@ namespace Interface
             {
                 ViewModelSend viewModelSend = new ViewModelSend(message, Id);
 
-                //if (message.Split(new string[1] { " " }, StringSplitOptions.None)[0] == "set")
-                //{
-                //    string[] DataMessage = message.Split(new string[1] { " " }, StringSplitOptions.None);
-
-                //    string NameFile = "";
-                //    for (int i = 1; i < DataMessage.Length; i++)
-                //    {
-                //        if (NameFile == "")
-                //            NameFile += DataMessage[i];
-                //        else
-                //            NameFile += " " + DataMessage[i];
-                //    }
-
-                //    if (File.Exists(NameFile))
-                //    {
-                //        FileInfo FileInfo = new FileInfo(NameFile);
-                //        FileInfoFTP NewFileInfo = new FileInfoFTP(File.ReadAllBytes(NameFile), FileInfo.Name);
-                //        viewModelSend = new ViewModelSend(JsonConvert.SerializeObject(NewFileInfo), Id);
-                //    }
-                //    else
-                //    {
-                //        Console.ForegroundColor = ConsoleColor.Red;
-                //        Console.WriteLine("Указанный файл не существует");
-                //        return;
-                //    }
-                //}
-
                 byte[] messageByte = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelSend));
                 int BytesSend = _socket.Send(messageByte);
 
@@ -210,21 +183,35 @@ namespace Interface
                 }
                 else if (viewModelMessage.Command == "file")
                 {
-                    string[] DataMessage = originalCommand.Message.Split(new string[1] { " " }, StringSplitOptions.None);
-                    string getFile = "";
-                    for (int i = 1; i < DataMessage.Length; i++)
+                    try
                     {
-                        if (getFile == "")
-                            getFile = DataMessage[i];
-                        else
-                            getFile += " " + DataMessage[i];
+                        var fileTransfer = JsonConvert.DeserializeObject<FileTransfer>(viewModelMessage.Data);
+
+                        if (fileTransfer != null && !string.IsNullOrEmpty(fileTransfer.Data))
+                        {
+                            var saveDialog = new Microsoft.Win32.SaveFileDialog
+                            {
+                                FileName = fileTransfer.FileName,
+                                Filter = "All files (*.*)|*.*"
+                            };
+
+                            if (saveDialog.ShowDialog() == true)
+                            {
+                                byte[] fileBytes = Convert.FromBase64String(fileTransfer.Data);
+                                File.WriteAllBytes(saveDialog.FileName, fileBytes);
+
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine($"Файл {fileTransfer.FileName} успешно скачан как {saveDialog.FileName}");
+                                MessageBox.Show($"Файл успешно скачан: {saveDialog.FileName}", "Успех",
+                                    MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                        }
                     }
-
-                    byte[] byteFile = JsonConvert.DeserializeObject<byte[]>(viewModelMessage.Data);
-                    File.WriteAllBytes(getFile, byteFile);
-
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Файл {getFile} успешно скачан");
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при скачивании файла: {ex.Message}", "Ошибка",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
             catch (Exception ex)
@@ -314,12 +301,87 @@ namespace Interface
 
         private void BtnDownload_Click(object sender, RoutedEventArgs e)
         {
+            var selectedItem = listViewFiles.SelectedItem as FileSystemItem;
 
+            if (selectedItem == null)
+            {
+                MessageBox.Show("Выберите файл для скачивания", "Информация",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (selectedItem.IsDirectory)
+            {
+                MessageBox.Show("Нельзя скачать директорию. Выберите файл.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                SendCommand($"get {selectedItem.Name}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при скачивании: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void BtnUpload_Click(object sender, RoutedEventArgs e)
         {
+            try
+            {
+                var openDialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "All files (*.*)|*.*",
+                    Multiselect = false
+                };
 
+                if (openDialog.ShowDialog() == true)
+                {
+                    string filePath = openDialog.FileName;
+                    string fileName = Path.GetFileName(filePath);
+
+                    // Читаем файл и конвертируем в Base64
+                    byte[] fileBytes = File.ReadAllBytes(filePath);
+                    string base64Data = Convert.ToBase64String(fileBytes);
+
+                    // Создаем объект для передачи
+                    var fileTransfer = new FileTransfer
+                    {
+                        FileName = fileName,
+                        Data = base64Data
+                    };
+
+                    // Отправляем на сервер
+                    ViewModelSend viewModelSend = new ViewModelSend(JsonConvert.SerializeObject(fileTransfer), Id);
+
+                    byte[] messageByte = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelSend));
+                    int BytesSend = _socket.Send(messageByte);
+
+                    byte[] bytes = new byte[10485760];
+                    int BytesRes = _socket.Receive(bytes);
+                    string messageServer = Encoding.UTF8.GetString(bytes, 0, BytesRes);
+
+                    // Обрабатываем ответ сервера
+                    ViewModelMessage viewModelMessage = JsonConvert.DeserializeObject<ViewModelMessage>(messageServer);
+
+                    if (viewModelMessage.Command == "message")
+                    {
+                        MessageBox.Show(viewModelMessage.Data, "Результат загрузки",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // Обновляем список файлов после загрузки
+                        SendCommand("cd");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке файла: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
