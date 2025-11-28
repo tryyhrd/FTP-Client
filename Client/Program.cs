@@ -9,54 +9,51 @@ using Newtonsoft.Json;
 
 namespace Client
 {
-    internal class Program
+    public class Program
     {
-        public static IPAddress IpAddress;
-        public static int Port;
+        //public static IPAddress IpAddress;
+        //public static int Port;
         public static int Id = -1;
         private static Socket _socket;
 
         static void Main(string[] args)
         {
-            string sIpAdress = "127.0.0.1";
-            string sPort = "5000";
+            //if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAdress, out IpAddress))
+            //{
+            //    Console.ForegroundColor = ConsoleColor.Green;
+            //    Console.WriteLine("Данные успешно введены. Запускаю сервер");
 
-            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAdress, out IpAddress))
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Данные успешно введены. Запускаю сервер");
+            //    if (ConnectToServer())
+            //    {
+            //        while (true)
+            //        {
+            //            try
+            //            {
+            //                Console.ForegroundColor = ConsoleColor.White;
+            //                string message = Console.ReadLine();
 
-                if (ConnectToServer())
-                {
-                    while (true)
-                    {
-                        try
-                        {
-                            Console.ForegroundColor = ConsoleColor.White;
-                            string message = Console.ReadLine();
-                            
-                            if (CheckCommand(message))
-                            {
-                                SendCommand(message);
-                            }
-                        }
-                        catch
-                        {
-                            if (!ConnectToServer())
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            //                if (CheckCommand(message))
+            //                {
+            //                    SendCommand(message);
+            //                }
+            //            }
+            //            catch
+            //            {
+            //                if (!ConnectToServer())
+            //                {
+            //                    break;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
         }
 
-        public static bool ConnectToServer()
+        public static bool ConnectToServer(IPAddress IPAddress, int Port)
         {
             try
             {
-                IPEndPoint endPoint = new IPEndPoint(IpAddress, Port);
+                IPEndPoint endPoint = new IPEndPoint(IPAddress, Port);
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _socket.Connect(endPoint);
 
