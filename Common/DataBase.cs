@@ -1,4 +1,5 @@
-﻿using System.Data.Entity;
+﻿using System;
+using System.Data.Entity;
 using System.Data.Entity.Migrations;
 
 namespace Common
@@ -7,10 +8,18 @@ namespace Common
     {
         public DbSet<UserAction> Actions { get; set; }
         public DbSet<User> Users { get; set; }
-
-        public DataBase(): base("Server=10.0.201.112;Database=base1_ISP_22_4_12;User=ISP_22_4_12;Pwd=7m4tIyDMeybp_;Trusted_Connection=false;")
+        /*Server=10.0.201.112;Database=base1_ISP_22_4_12;User=ISP_22_4_12;Pwd=7m4tIyDMeybp_;Trusted_Connection=false;*/
+        public DataBase(): base(@"Server=DESKTOP-E07VVT6\SQLEXPRESS;Database=FTP;Integrated Security=True")
         {
-            Database.SetInitializer(new MigrateDatabaseToLatestVersion<DataBase, Configuration>());
+            try
+            {
+                Database.SetInitializer(new MigrateDatabaseToLatestVersion<DataBase, Configuration>());
+            }
+            catch (System.Data.SqlClient.SqlException sqlEx)
+            {
+                Console.WriteLine(sqlEx.Message);
+            }
+            
         }
 
         internal sealed class Configuration : DbMigrationsConfiguration<DataBase>
@@ -21,6 +30,5 @@ namespace Common
                 AutomaticMigrationDataLossAllowed = true;
             }
         }
-
     }
 }

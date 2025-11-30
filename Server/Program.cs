@@ -16,36 +16,28 @@ namespace Server
         public static IPAddress IpAddress;
         public static int Port;
 
-        static void Main()
-        {
-            try
+            static void Main()
             {
-                Console.WriteLine("Запуск сервера...");
-
-                try 
+                try
                 {
+                    Console.WriteLine("Запуск сервера...");
+
+                    try 
+                    {
                     using (var db = new DataBase())
                     {
-                        if (db.Database.Exists())
-                        {
+                        db.Database.Initialize(force: false);
 
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("База данных подключена успешно");
-
-                            if (!db.Users.Any())
-                            {
-                                var user = new User("vlad", "123", Directory.GetCurrentDirectory());
-                                db.Users.Add(user);
-                                db.SaveChanges();
-                            }
-                        }
-                        else
+                        if (!db.Users.Any())
                         {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("База данных не подключена");
-                            return;
+                            var user = new User("vlad", "123", Directory.GetCurrentDirectory());
+                            db.Users.Add(user);
+                            db.SaveChanges();
                         }
                     }
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("База данных подключена успешно");
                 }
                 catch (Exception ex)
                 {
@@ -429,7 +421,8 @@ namespace Server
 
             try
             {
-                FileTransfer fileTransfer = JsonConvert.DeserializeObject<FileTransfer>(viewModelSend.Message);
+                string message = viewModelSend.Message.Split(' ')[1];
+                FileTransfer fileTransfer = JsonConvert.DeserializeObject<FileTransfer>(message);
                 if (fileTransfer == null || fileTransfer.Data == null)
                 {
                     SendResponse(Handler, "message", "Неверный формат файла");

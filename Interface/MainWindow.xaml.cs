@@ -155,8 +155,7 @@ namespace Interface
                 }
                 else if (viewModelMessage.Command == "message")
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine(viewModelMessage.Data);
+                    SendCommand("cd");
                 }
                 else if (viewModelMessage.Command == "cd")
                 {
@@ -343,38 +342,18 @@ namespace Interface
                     string filePath = openDialog.FileName;
                     string fileName = Path.GetFileName(filePath);
 
-                    // Читаем файл и конвертируем в Base64
                     byte[] fileBytes = File.ReadAllBytes(filePath);
                     string base64Data = Convert.ToBase64String(fileBytes);
 
-                    // Создаем объект для передачи
                     var fileTransfer = new FileTransfer
                     {
                         FileName = fileName,
                         Data = base64Data
                     };
 
-                    // Отправляем на сервер
-                    ViewModelSend viewModelSend = new ViewModelSend(JsonConvert.SerializeObject(fileTransfer), Id);
+                    string fileJson = JsonConvert.SerializeObject(fileTransfer);
 
-                    byte[] messageByte = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelSend));
-                    int BytesSend = _socket.Send(messageByte);
-
-                    byte[] bytes = new byte[10485760];
-                    int BytesRes = _socket.Receive(bytes);
-                    string messageServer = Encoding.UTF8.GetString(bytes, 0, BytesRes);
-
-                    // Обрабатываем ответ сервера
-                    ViewModelMessage viewModelMessage = JsonConvert.DeserializeObject<ViewModelMessage>(messageServer);
-
-                    if (viewModelMessage.Command == "message")
-                    {
-                        MessageBox.Show(viewModelMessage.Data, "Результат загрузки",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
-
-                        // Обновляем список файлов после загрузки
-                        SendCommand("cd");
-                    }
+                    SendCommand($"set {fileJson}");
                 }
             }
             catch (Exception ex)
