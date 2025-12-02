@@ -135,6 +135,7 @@ namespace Client
 
                 if (message.Split(new string[1] { " " }, StringSplitOptions.None)[0] == "set")
                 {
+
                     string[] DataMessage = message.Split(new string[1] { " " }, StringSplitOptions.None);
 
                     string NameFile = "";
@@ -160,6 +161,8 @@ namespace Client
                     }
                 }
 
+                
+
                 byte[] messageByte = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(viewModelSend));
                 int BytesSend = _socket.Send(messageByte);
 
@@ -184,8 +187,12 @@ namespace Client
             try
             {
                 ViewModelMessage viewModelMessage = JsonConvert.DeserializeObject<ViewModelMessage>(messageServer);
-
-                if (viewModelMessage.Command == "autorization")
+                FileTransfer fileTransfer = null;
+                if (viewModelMessage.Command == "file")
+                {
+                    fileTransfer = JsonConvert.DeserializeObject<FileTransfer>(viewModelMessage.Data);
+                }
+                    if (viewModelMessage.Command == "autorization")
                 {
                     Id = int.Parse(viewModelMessage.Data);
                     Console.ForegroundColor = ConsoleColor.Green;
@@ -217,12 +224,21 @@ namespace Client
                         else
                             getFile += " " + DataMessage[i];
                     }
+                    string serverFileName = fileTransfer.FileName;
+                    string finalFileName = Path.GetFileName(serverFileName);
+                    byte[] fileBytes = Convert.FromBase64String(fileTransfer.Data);
 
-                    byte[] byteFile = JsonConvert.DeserializeObject<byte[]>(viewModelMessage.Data);
-                    File.WriteAllBytes(getFile, byteFile);
-
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Файл {getFile} успешно скачан");
+                    try
+                    {
+                        File.WriteAllBytes(finalFileName, fileBytes);
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Файл '{finalFileName}' успешно скачан и сохранен.");
+                    }
+                    catch (Exception ioEx)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Ошибка при сохранении файла: {ioEx.Message}");
+                    }
                 }
             }
             catch (Exception ex)
